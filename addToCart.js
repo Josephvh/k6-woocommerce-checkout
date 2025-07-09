@@ -6,7 +6,7 @@ import { randomIntBetween } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 export function addToCart() {
   group("Add to Cart", function () {
     const response = http.post(
-      "http://ecommerce.test.k6.io/?wc-ajax=add_to_cart",
+      `${globalThis.vars.websiteUrl}/?wc-ajax=add_to_cart`,
       {
         product_sku: globalThis.vars["selectedProduct"].sku,
         product_id: globalThis.vars["selectedProduct"].id,
@@ -20,8 +20,8 @@ export function addToCart() {
           connection: "keep-alive",
           "content-type":
             "application/x-www-form-urlencoded;type=content-type;mimeType=application/x-www-form-urlencoded",
-          host: "ecommerce.test.k6.io",
-          origin: "http://ecommerce.test.k6.io",
+          host: globalThis.vars.hostName,
+          origin: globalThis.vars.websiteUrl,
           "x-requested-with": "XMLHttpRequest",
         },
       }

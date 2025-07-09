@@ -10,7 +10,7 @@ export function submitCheckout() {
 
   group("Submit Checkout", function () {
     response = http.post(
-      "http://ecommerce.test.k6.io/?wc-ajax=checkout",
+      `${globalThis.vars.websiteUrl}/?wc-ajax=checkout`,
       {
         billing_first_name: "k6",
         billing_last_name: "Test",
@@ -36,8 +36,8 @@ export function submitCheckout() {
           connection: "keep-alive",
           "content-type":
             "application/x-www-form-urlencoded;type=content-type;mimeType=application/x-www-form-urlencoded",
-          host: "ecommerce.test.k6.io",
-          origin: "http://ecommerce.test.k6.io",
+          host: globalThis.vars.hostName,
+          origin: globalThis.vars.websiteUrl,
           "x-requested-with": "XMLHttpRequest",
         },
       }
@@ -102,7 +102,7 @@ export function submitCheckout() {
       globalThis.vars["redirectUrl"],
       {
         tags: {
-          name: "http://ecommerce.test.k6.io/checkout/order-received/"
+          name: `${globalThis.vars.websiteUrl}/checkout/order-received/`
         },
         headers: {
           accept:
@@ -110,7 +110,7 @@ export function submitCheckout() {
           "accept-encoding": "gzip, deflate",
           "accept-language": "en-US,en;q=0.9",
           connection: "keep-alive",
-          host: "ecommerce.test.k6.io",
+          host: globalThis.vars.hostName,
           "upgrade-insecure-requests": "1",
         },
       }
@@ -128,7 +128,7 @@ export function submitCheckout() {
     });
 
     response = http.post(
-      "http://ecommerce.test.k6.io/?wc-ajax=get_refreshed_fragments",
+      `${globalThis.vars.websiteUrl}/?wc-ajax=get_refreshed_fragments`,
       {
         time: "1613672584353",
       },
@@ -140,8 +140,8 @@ export function submitCheckout() {
           connection: "keep-alive",
           "content-type":
             "application/x-www-form-urlencoded;type=content-type;mimeType=application/x-www-form-urlencoded",
-          host: "ecommerce.test.k6.io",
-          origin: "http://ecommerce.test.k6.io",
+          host: globalThis.vars.hostName,
+          origin: globalThis.vars.websiteUrl,
           "x-requested-with": "XMLHttpRequest",
         },
       }
