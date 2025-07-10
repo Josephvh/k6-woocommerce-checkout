@@ -78,5 +78,5 @@ export function navigateShop() {
     });
   });
 
-  sleep(randomIntBetween(pauseMin, pauseMax));
+  // sleep(randomIntBetween(pauseMin, pauseMax));
 }

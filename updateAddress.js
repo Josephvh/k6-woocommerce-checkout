@@ -1,100 +1,93 @@
-import { sleep, group } from "k6";
+import { sleep, group, check, fail } from "k6";
 import http from "k6/http";
 import { checkStatus } from "./utils.js";
-import { randomIntBetween } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
+import { randomIntBetween, findBetween } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
+import jsonpath from "https://jslib.k6.io/jsonpath/1.0.2/index.js";
 
 export function updateAddress() {
-  group("Update Address", function () {
-    let response = http.post(
-      `${globalThis.vars.websiteUrl}/?wc-ajax=update_order_review`,
-      {
-        security: globalThis.vars["securityToken"],
-        // payment_method: "cod",
-        // country: "US",
-        // state: "CO",
-        // postcode: "",
-        // city: "",
-        // address: "",
-        // address_2: "",
-        // s_country: "US",
-        // s_state: "CO",
-        // s_postcode: "",
-        // s_city: "",
-        // s_address: "",
-        // s_address_2: "",
-        // has_full_address: "false",
-        // post_data:
-        //   "billing_first_name=&billing_last_name=&billing_company=&billing_country=US&billing_address_1=&billing_address_2=&billing_city=&billing_state=CO&billing_postcode=&billing_phone=&billing_email=&order_comments=&payment_method=cod&woocommerce-process-checkout-nonce=" + globalThis.vars["checkoutToken"] + "&_wp_http_referer=%2Fcheckout%2F",
-        post_data:
-          "billing_first_name=Joseph&billing_last_name=Van&billing_email=joseph.van@example.com&billing_address_1=Bellville&billing_city=Cape%20Town&billing_postcode=7530&billing_country=ZA&billing_state=WC&payment_method=cod&woocommerce-process-checkout-nonce=" + globalThis.vars["checkoutToken"] + "&_wp_http_referer=%2Fcheckout%2F",
+  group("Submit Checkout (Store API)", function () {
+    const url = `${globalThis.vars.websiteUrl}/wp-json/wc/store/v1/checkout?_locale=site`;
+
+    const payload = JSON.stringify({
+      billing_address: globalThis.vars.customer_details,
+      create_account: false,
+      shipping_address: globalThis.vars.customer_details,
+      payment_method: "cod",
+    });
+
+    const response = http.post(url, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, */*;q=0.1",
+        "X-WP-Nonce": globalThis.vars.wpNonce,
+        "Nonce": globalThis.vars.nonce,
+        Origin: globalThis.vars.websiteUrl,
+        Referer: globalThis.vars.websiteCheckoutUrl,
       },
-      {
-        headers: {
-          accept: "*/*",
-          "accept-encoding": "gzip, deflate",
-          "accept-language": "en-US,en;q=0.9",
-          connection: "keep-alive",
-          "content-type":
-            "application/x-www-form-urlencoded;type=content-type;mimeType=application/x-www-form-urlencoded",
-          host: globalThis.vars.hostName,
-          origin: globalThis.vars.websiteUrl,
-          "x-requested-with": "XMLHttpRequest",
-        },
-      }
-    );
+    });
 
     checkStatus({
       response: response,
       expectedStatus: 200,
       failOnError: true,
-      printOnError: true
+      printOnError: true,
     });
 
-    response = http.post(
-      `${globalThis.vars.websiteUrl}/?wc-ajax=update_order_review`,
-      {
-        security: globalThis.vars["securityToken"],
-        // payment_method: "cod",
-        // country: "US",
-        // state: "CO",
-        // postcode: "80443",
-        // city: "Frisco",
-        // address: "Street Address 1",
-        // address_2: "",
-        // s_country: "US",
-        // s_state: "CO",
-        // s_postcode: "80443",
-        // s_city: "Frisco",
-        // s_address: "Street Address 1",
-        // s_address_2: "",
-        // has_full_address: "true",
-      //   post_data:
-      //     "billing_first_name=Tom&billing_last_name=Test&billing_company=&billing_country=US&billing_address_1=Street%20Address%201&billing_address_2=&billing_city=Frisco&billing_state=CO&billing_postcode=80443&billing_phone=&billing_email=&order_comments=&payment_method=cod&woocommerce-process-checkout-nonce=" + globalThis.vars["checkoutToken"] + "&_wp_http_referer=%2F%3Fwc-ajax%3Dupdate_order_review",
-        post_data:
-          "billing_first_name=Joseph&billing_last_name=Van&billing_company=&billing_country=ZA&billing_address_1=Bellville&billing_address_2=&billing_city=Cape%20Town&billing_state=WC&billing_postcode=7530&billing_phone=&billing_email=joseph.van%40example.com&order_comments=&payment_method=cod&shipping_first_name=Joseph&shipping_last_name=Van&shipping_company=&shipping_country=ZA&shipping_address_1=Bellville&shipping_address_2=&shipping_city=Cape%20Town&shipping_state=WC&shipping_postcode=7530&shipping_phone=&woocommerce-process-checkout-nonce=" + globalThis.vars["checkoutToken"] + "&_wp_http_referer=%2F%3Fwc-ajax%3Dupdate_order_review",
-      },
-      {
-        headers: {
-          accept: "*/*",
-          "accept-encoding": "gzip, deflate",
-          "accept-language": "en-US,en;q=0.9",
-          connection: "keep-alive",
-          "content-type":
-            "application/x-www-form-urlencoded;type=content-type;mimeType=application/x-www-form-urlencoded",
-          host: globalThis.vars.hostName,
-          origin: globalThis.vars.websiteUrl,
-          "x-requested-with": "XMLHttpRequest",
-        },
+    let result;
+
+    try {
+      result = jsonpath.query(
+        response.json(),
+        "$['result']"
+      )[0];
+    } catch (err) {
+      // not JSON most likely, so print the response (if there was a response.body):
+      if (response.body) {
+        console.log(response.body);
       }
-    );
+      fail(err); // ends the iteration
+    }
 
-    checkStatus({
-      response: response,
-      expectedStatus: 200,
-      failOnError: true,
-      printOnError: true
+    const resultEntry = response.json().payment_result.payment_details.find(
+      (item) => item.key === "result"
+    );
+    const checkout_result = resultEntry ? resultEntry.value : undefined;
+
+    console.debug("Checkout result:", checkout_result);
+
+    check(checkout_result, {
+      'checkout completed successfully': (r) => r === 'success',
     });
+
+    globalThis.vars["redirectUrl"] = jsonpath.query(
+      response.json(),
+      "$.payment_result.payment_details[?(@.key=='redirect')].value"
+    )[0];
+
+    if (!globalThis.vars["redirectUrl"]) {
+      fail(`Checkout failed: no redirect URL in response:\n${response.body}`);
+    }
+
+    console.debug("Checkout redirect URL: " + globalThis.vars["redirectUrl"]);
+
+    // the order ID is in the redirectUrl
+    globalThis.vars["orderId"] = findBetween(globalThis.vars["redirectUrl"], 'order-received/', '/');
+    globalThis.vars["key"] = globalThis.vars["redirectUrl"].substring(globalThis.vars["redirectUrl"].indexOf('key=') + 4);
+
+    console.debug("orderId: " + globalThis.vars["orderId"]);
+    console.debug("key: " + globalThis.vars["key"]);
+
+    if (globalThis.vars["orderId"].length > 0) {
+      console.debug("Successfully placed order! ID: " + globalThis.vars["orderId"]);
+    } else {
+      if (response.body) {
+        fail("Failed to place order: " + response.body);
+      } else {
+        fail("Failed to place order (no response.body).");
+      }
+    }
+
   });
 
-  sleep(randomIntBetween(pauseMin, pauseMax));
+  // sleep(randomIntBetween(pauseMin, pauseMax));
 }

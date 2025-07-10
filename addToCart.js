@@ -35,5 +35,5 @@ export function addToCart() {
     });
   });
 
-  sleep(randomIntBetween(pauseMin, pauseMax));
+  // sleep(randomIntBetween(pauseMin, pauseMax));
 }
