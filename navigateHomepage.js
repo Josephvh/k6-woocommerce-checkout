@@ -26,5 +26,5 @@ export function navigateHomepage() {
     });
   });
 
-  sleep(randomIntBetween(pauseMin, pauseMax));
+  // sleep(randomIntBetween(pauseMin, pauseMax));
 }

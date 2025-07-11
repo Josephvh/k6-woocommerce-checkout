@@ -1,7 +1,7 @@
 import { sleep, group } from "k6";
 import http from "k6/http";
 import { checkStatus } from "./utils.js";
-import { randomIntBetween, findBetween } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
+import { randomIntBetween } from "https://jslib.k6.io/k6-utils/1.1.0/index.js";
 
 export function navigateToCheckout() {
   group("Navigate to Checkout", function () {
@@ -24,17 +24,19 @@ export function navigateToCheckout() {
       printOnError: true
     });
 
-    // dynamic value: update_order_review_nonce
-    globalThis.vars["securityToken"] = findBetween(response.body, 'update_order_review_nonce":"', '"');
+    const nonceMatch = response.body.match(/storeApiNonce:\s*'([a-zA-Z0-9]+)'/);
+    if (nonceMatch && nonceMatch[1]) {
+      globalThis.vars.nonce = nonceMatch[1];
+    }
 
-    // dynamic value: woocommerce-process-checkout-nonce
-    globalThis.vars["checkoutToken"] = response
-      .html("#woocommerce-process-checkout-nonce")
-      .val();
+    const wpNonceMatch = response.body.match(/wp\.apiFetch\.nonceMiddleware\s*=\s*wp\.apiFetch\.createNonceMiddleware\(\s*["']([a-f0-9]+)["']\s*\)/i);
+    if (wpNonceMatch && wpNonceMatch[1]) {
+      globalThis.vars.wpNonce = wpNonceMatch[1];
+    }
 
-    console.debug("Security token: " + globalThis.vars["securityToken"]);
-    console.debug("Checkout token: " + globalThis.vars["checkoutToken"]);
+    console.debug("wp-nonce token: " + globalThis.vars["wpNonce"]);
+    console.debug("storeApiNonce token: " + globalThis.vars["nonce"]);
   });
 
-  sleep(randomIntBetween(pauseMin, pauseMax));
+  // sleep(randomIntBetween(pauseMin, pauseMax));
 }
